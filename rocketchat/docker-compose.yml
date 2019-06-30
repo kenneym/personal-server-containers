@@ -1,0 +1,43 @@
+version: '3'
+
+services:
+
+  mongo_db:
+    image: mongo:latest
+    volumes:
+      - data:/data/db
+      - backups:/dump
+    command: mongod --smallfiles
+  
+  redis:
+    image: redis:alpine
+    restart: always
+
+  rocketchat:
+    image: rocketchat/rocket.chat:latest
+    restart: always
+    env_file:
+      - rocket.env
+    depends_on:
+      - mongo_db
+      - redis
+ 
+  hubot:
+    image: rocketchat/hubot-rocketchat:latest
+    restart: unless-stopped
+    env_file:
+      - bot.env
+    volumes:
+      - ./hubotscripts:/home/hubot/scripts
+    depends_on:
+      - rocketchat
+
+volumes:
+  data:
+  backups:
+
+networks:
+
+    default:
+       external:
+         name: proxy_proxy-tier

@@ -1,0 +1,36 @@
+version: '3'
+services:
+  gitlab:
+    image: 'gitlab/gitlab-ce:latest'
+    restart: always
+    hostname: 'gitlab.artificien.link'
+
+    environment:
+      VIRTUAL_HOST: gitlab.yoursite.com
+      LETSENCRYPT_HOST: gitlab.yoursite.com
+      LETSENCRYPT_EMAIL: your@email.com
+
+      # Sets a different port for the gitlab server.
+      # This is neccessary on servers which already allow ssh access via
+      # port 22, since the container will be unable to bind this traditional
+      # ssh git port.
+      GITLAB_OMNIBUS_CONFIG: |
+        gitlab_rails['gitlab_shell_ssh_port'] = 2222
+
+    ports:
+      - "2222:22" # Allows ssh push/pull
+
+    volumes:
+      - gitlab_config:/etc/gitlab
+      - gitlab_log:/var/log/gitlab
+      - gitlab:/var/opt/gitlab
+
+volumes:
+  gitlab_config:
+  gitlab_log:
+  gitlab:
+
+networks:
+  default:
+    external:
+      name: proxy_proxy-tier 

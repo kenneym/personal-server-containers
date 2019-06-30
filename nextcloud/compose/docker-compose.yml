@@ -1,0 +1,72 @@
+version: '3'
+
+services:
+  db:
+    image: mariadb
+    container_name: nextcloud-mariadb
+    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+    restart: always
+    volumes:
+      - db:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=choosepasswordhere
+    env_file:
+      - db.env
+
+  redis:
+    container_name: nextcloud-redis
+    image: redis:alpine
+    restart: always
+
+  app:
+    build: ./app
+    restart: always
+    container_name: nextcloud-app-server
+    volumes:
+      - nextcloud:/var/www/html
+    environment:
+      - VIRTUAL_HOST=cloud.yoursite.com
+      - LETSENCRYPT_HOST=cloud.yoursite.com
+      - LETSENCRYPT_EMAIL=your@email.com
+      - MYSQL_HOST=db
+    env_file:
+      - db.env
+    depends_on:
+      - db
+      - redis
+
+  cron:
+    build: ./app
+    container_name: nextcloud-cron
+    restart: always
+    volumes:
+      - nextcloud:/var/www/html
+    entrypoint: /cron.sh
+    depends_on:
+      - db
+      - redis
+
+  onlyoffice-document-server:
+    container_name: onlyoffice-document-server
+    image: onlyoffice/documentserver:latest
+    stdin_open: true
+    tty: true
+    restart: always
+    volumes:
+      - document_data:/var/www/onlyoffice/Data
+      - document_log:/var/log/onlyoffice
+    environment:
+      - VIRTUAL_HOST=office.yoursite.com
+      - LETSENCRYPT_HOST=office.yoursite.com
+      - LETSENCRYPT_EMAIL=your@email.com
+
+volumes:
+  db:
+  nextcloud:
+  document_data:
+  document_log:
+
+networks:
+  default:
+    external:
+      name: proxy_proxy-tier 
